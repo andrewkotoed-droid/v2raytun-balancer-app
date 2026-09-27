@@ -66,26 +66,27 @@ public class MainActivity extends Activity {
             subData = new String(Base64.getDecoder().decode(subData));
         }
         
-        List<String> servers = new ArrayList<>();
+        List<String> uuids = new ArrayList<>();
+        List<String> hosts = new ArrayList<>();
+        List<String> ports = new ArrayList<>();
+        
         Pattern pattern = Pattern.compile("vless://([^@]+)@([^:]+):(\\d+)");
         Matcher matcher = pattern.matcher(subData);
         while (matcher.find()) {
-            servers.add(String.format("{\"uuid\":\"%s\",\"host\":\"%s\",\"port\":%s}", matcher.group(1), matcher.group(2), matcher.group(3)));
+            uuids.add(matcher.group(1));
+            hosts.add(matcher.group(2));
+            ports.add(matcher.group(3));
         }
         
-        if (servers.isEmpty()) {
+        if (uuids.isEmpty()) {
             throw new RuntimeException("Серверы не найдены");
         }
         
         StringBuilder outbounds = new StringBuilder();
         StringBuilder selectors = new StringBuilder();
-        for (int i = 0; i < servers.size(); i++) {
-            String server = servers.get(i);
-            java.util.regex.Matcher m = Pattern.compile("\"uuid\":\"([^"]+)\".*\"host\":\"([^"]+)\".*\"port\":(\\d+)").matcher(server);
-            if (m.find()) {
-                outbounds.append(String.format(",\"server%d\":{\"tag\":\"server%d\",\"protocol\":\"vless\",\"settings\":{\"vnext\":[{\"address\":\"%s\",\"port\":%s,\"users\":[{\"id\":\"%s\",\"encryption\":\"none\"}]}]}}", i, i, m.group(2), m.group(3), m.group(1)));
-                selectors.append(String.format(",\"server%d\"", i));
-            }
+        for (int i = 0; i < uuids.size(); i++) {
+            outbounds.append(String.format(",\"server%d\":{\"tag\":\"server%d\",\"protocol\":\"vless\",\"settings\":{\"vnext\":[{\"address\":\"%s\",\"port\":%s,\"users\":[{\"id\":\"%s\",\"encryption\":\"none\"}]}]}}", i, i, hosts.get(i), ports.get(i), uuids.get(i)));
+            selectors.append(String.format(",\"server%d\"", i));
         }
         
         return String.format(
